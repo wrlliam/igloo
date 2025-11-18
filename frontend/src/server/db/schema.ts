@@ -1,11 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import { index, sqliteTable } from "drizzle-orm/sqlite-core";
 
-/**
- * Multi-project schema prefix helper
- */
-
-// Posts example table
 export const posts = sqliteTable(
   "post",
   (d) => ({

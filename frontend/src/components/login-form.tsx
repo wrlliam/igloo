@@ -1,0 +1,216 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent } from "~/components/ui/card";
+
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "~/components/ui/form";
+
+import { Input } from "~/components/ui/input";
+import { Checkbox } from "~/components/ui/checkbox";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { authClient } from "~/server/better-auth/client";
+import { toast } from "sonner";
+
+export const formSchema = z.object({
+  email: z.email("Invalid email address"),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .regex(/^\S+$/, "Password cannot contain spaces")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one symbol"),
+
+  rememberMe: z.boolean().default(false).optional(),
+});
+
+export function LoginForm({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+
+    const { email, password, rememberMe } = values;
+
+    const result = await authClient.signIn.email({
+      email,
+      password,
+      rememberMe: rememberMe,
+    });
+
+    setLoading(false);
+
+    if (result.error) {
+      toast.error(result.data);
+      return;
+    }
+
+    toast.success("Logged in! Redirecting...");
+    router.push("/");
+  }
+
+  return (
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <Card className="overflow-hidden p-0">
+        <CardContent className="grid p-0 md:grid-cols-2">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col gap-6 p-6 md:p-8"
+            >
+              {/* Header */}
+              <div className="flex flex-col items-center gap-2 text-center">
+                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <p className="text-muted-foreground">
+                  Login to your Igloo account
+                </p>
+              </div>
+
+              {/* Email Field */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="m@example.com"
+                        type="email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Password Field */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center">
+                      <FormLabel>Password</FormLabel>
+                      {/* <a
+                        href="#"
+                        className="ml-auto text-sm underline-offset-2 hover:underline"
+                      >
+                        Forgot your password?
+                      </a> */}
+                    </div>
+
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={showPass ? "text" : "password"}
+                          {...field}
+                        />
+                      </FormControl>
+
+                      <button
+                        type="button"
+                        className="text-muted-foreground absolute top-2.5 right-3"
+                        onClick={() => setShowPass((v) => !v)}
+                      >
+                        {showPass ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Remember Me */}
+              <FormField
+                control={form.control}
+                name="rememberMe"
+                render={({ field }) => (
+                  <FormItem className="mt-[-8px] flex flex-row items-center gap-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(val) => field.onChange(Boolean(val))}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm">Remember me</FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              {/* Submit Button */}
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  "Login"
+                )}
+              </Button>
+
+              {/* Footer */}
+              <FormDescription className="text-center">
+                Don&apos;t have an account? <a href="/signup">Sign up</a>
+              </FormDescription>
+            </form>
+          </Form>
+
+          <div className="bg-muted relative hidden md:block">
+            <img
+              src="/images/background.jpg"
+              alt="Image"
+              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <p className="text-muted-foreground px-6 text-center text-sm">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        and <a href="#">Privacy Policy</a>.
+      </p>
+    </div>
+  );
+}
