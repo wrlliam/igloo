@@ -11,10 +11,6 @@ function isPublic(pathname: string) {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  console.log("MW PATH:", pathname);
-  console.log("MW COOKIES:", req.cookies.getAll());
-
-  // Skip assets
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/static") ||
@@ -24,17 +20,15 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow login/signup
-  if (isPublic(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Session cookie check
   const sessionCookie = req.cookies.get("better-auth.session_token");
 
-  console.log("SESSION COOKIE:", sessionCookie);
+  if (isPublic(pathname) && sessionCookie) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
 
-  if (!sessionCookie) {
+  if (!isPublic(pathname) && !sessionCookie) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

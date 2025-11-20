@@ -32,7 +32,7 @@ import { authClient } from "~/server/better-auth/client";
 const signupSchema = z
   .object({
     email: z.email("Invalid email address"),
-
+    name: z.string("Invalid name"),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters long")
@@ -64,22 +64,20 @@ export function SignupForm({
     defaultValues: {
       email: "",
       password: "",
+      name: "",
       confirmPassword: "",
     },
   });
 
-  //
-  // Handle Signup
-  //
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setLoading(true);
 
-    const { email, password } = values;
+    const { email, password, name } = values;
 
     const result = await authClient.signUp.email({
       email,
       password,
-      name: email,
+      name: name,
       callbackURL: "/login",
     });
 
@@ -109,6 +107,25 @@ export function SignupForm({
                   Enter your email below to create your account
                 </p>
               </div>
+
+              {/* Username */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="John Doe"
+                        type="text"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Email */}
               <FormField

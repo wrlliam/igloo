@@ -1,10 +1,11 @@
 import { relations, sql } from "drizzle-orm";
 import { index, sqliteTable } from "drizzle-orm/sqlite-core";
 
-export const posts = sqliteTable(
-  "post",
+export const hosts = sqliteTable(
+  "host",
   (d) => ({
     id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+    userId: d.text(), // User.id
     name: d.text({ length: 256 }),
     createdById: d
       .text({ length: 255 })
@@ -15,11 +16,7 @@ export const posts = sqliteTable(
       .default(sql`(unixepoch())`)
       .notNull(),
     updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
-  }),
-  (t) => [
-    index("created_by_idx").on(t.createdById),
-    index("name_idx").on(t.name),
-  ],
+  })
 );
 
 // Better Auth core tables
