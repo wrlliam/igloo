@@ -246,4 +246,81 @@ configure_firewall() {
     return 0
   fi
 
-  ensure_comman_
+  ensure_command ufw ufw || {
+    log_error "UFW could not be installed; skipping firewall configuration."
+    return 1
+  }
+
+  # Warn if enabled on remote systems; user might lock themselves out
+  log_warn "If this is a remote server, ensure you have an existing allow rule for your SSH port before enabling or modifying UFW."
+
+  if ! ufw status >/dev/null 2>&1; then
+    log_warn "UFW status could not be determined. You may need to configure it manually."
+  fi
+
+  local ufw_status
+  ufw_status="$(ufw status | head -n1 || true)"
+
+  log_info "Current UFW status: ${ufw_status}"
+
+  log_info "Adding rule: allow ${LISTEN_PORT}/tcp ..."
+  ufw allow "${LISTEN_PORT}/tcp" || {
+    log_error "Failed to add UFW rule for port ${LISTEN_PORT}."
+    return 1
+  }
+
+  if [[ "${ufw_status}" == "Status: inactive" ]]; then
+    if ask_yes_no "UFW is currently inactive. Enable UFW now?" "N"; then
+      log_info "Enabling UFW..."
+      ufw enable
+      log_success "UFW enabled."
+    else
+      log_warn "UFW left inactive. The rule is created but not enforced until UFW is enabled."
+    fi
+  else
+    log_success "UFW rule added for port ${LISTEN_PORT}/tcp."
+  fi
+}
+
+#########################
+# Main Execution Flow   #
+#########################
+
+main() {
+  echo -e "${BOLD}${MAGENTA}
+╔══════════════════════════════════════════════╗
+║           Igloo Agent Installer              ║
+╠══════════════════════════════════════════════╣
+║  Repo: ${REPO_OWNER}/${REPO_NAME}                          ║
+║  Binary: ${BINARY_PATH_IN_REPO}             ║
+║  Port: ${LISTEN_PORT}                                   ║
+╚══════════════════════════════════════════════╝
+${RESET}"
+
+  echo -e "${YELLOW}Security warning from project README:${RESET}"
+  echo -e "${YELLOW}- This project is in early alpha; security is NOT a priority."
+  echo -e "- Do NOT expose agents to the internet."
+  echo -e "- Only use in trusted, local environments (home lab).${RESET}"
+  echo
+
+  require_root
+  check_os
+  download_agent
+
+  echo
+  if ask_yes_no "Create and enable a systemd service to run igloo-agent as root?" "Y"; then
+    create_systemd_service
+  else
+    log_warn "User declined systemd service creation. You can run ${BINARY_DEST} manually."
+  fi
+
+  echo
+  configure_firewall || log_warn "Firewall configuration encountered issues or was skipped."
+
+  echo
+  log_success "All done. Review the above logs and your firewall settings."
+  echo -e "${CYAN}To check the service later:${RESET} systemctl status ${SYSTEMD_UNIT_NAME}"
+  echo -e "${CYAN}Binary location:${RESET} ${BINARY_DEST}"
+}
+
+main "$@"
