@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "compile": "bun build src/index.ts --compile --outfile dist/agent"
-  },
+  "compile": "bun build src/index.ts --compile --outfile dist/agent"
+},
   "devDependencies": {
     "@types/bun": "latest"
   },
