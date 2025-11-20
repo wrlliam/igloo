@@ -12,6 +12,7 @@ app
     cookies: "with",
     milk: true,
   }))
+  .get("/ping", () => new Response(JSON.stringify(true), {status: 200}))
   .post("/", async ({ body }) => {
     try {
       const { command } = evalSchema.parse(body);
@@ -58,4 +59,6 @@ app
 app.listen({
   hostname: "0.0.0.0",
   port: 5172,
+}, () => {
+  console.log("Running...")
 });
