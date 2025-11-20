@@ -20,15 +20,27 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning className={`${geist.variable}`}>
-      <body suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
+      <html lang="en" suppressHydrationWarning className={geist.variable}>
+        <body suppressHydrationWarning className="overflow-hidden">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            disableTransitionOnChange
+          >
+            <div className="fixed inset-0 -z-10">
+              <img
+                src="/images/background.jpg"
+                alt="Background"
+                className="h-full w-full object-cover grayscale dark:brightness-[0.2]"
+              />
+            </div>
+
+            <div className="relative z-10 h-screen overflow-y-auto">
+              {children}
+            </div>
+          </ThemeProvider>
+        </body>
+      </html>
     </html>
   );
 }
